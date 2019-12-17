@@ -1,0 +1,54 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from PIL import Image
+import pytesseract
+import urllib.request
+import requests
+import time
+
+usernameStr = '1847213'
+passwordStr = '43501042'
+browser = webdriver.Chrome()
+browser.get(('https://kp.christuniversity.in/KnowledgePro/StudentLogin.do'))
+
+def downloadcaptcha():
+    images = browser.find_elements_by_id('captcha_img')
+    lst = []
+    for image in images:
+        lst.append(image.get_attribute('src'))
+    src = lst[-1]
+    filename = "sample.png"
+    time.sleep(1)
+    r = requests.get(src, allow_redirects=True)
+    down_path = ''+filename
+    open(down_path, 'wb').write(r.content)
+    im = Image.open("sample.png")
+
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    text = pytesseract.image_to_string(im, lang = 'eng')
+    print(text)
+    
+    return text
+
+# fill in username and hit the next button
+username = browser.find_element_by_id('username')
+username.send_keys(usernameStr)
+
+nextButton = browser.find_element_by_id('password')
+nextButton.click()
+
+# wait for transition then continue to fill items
+password = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.NAME, "password")))
+password.send_keys(passwordStr)
+
+gotocaptcha = browser.find_element_by_id('captchaBox')
+gotocaptcha.click()
+
+captcha = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.NAME, "enteredCaptcha")))
+captchaStr = downloadcaptcha()
+captcha.send_keys(captchaStr)
+
+signInButton = browser.find_element_by_id('Login')
+signInButton.click()
